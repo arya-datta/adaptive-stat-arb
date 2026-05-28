@@ -1,0 +1,20 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+.env
+.ipynb_checkpoints/
+data/cache/
+*.csv.gz
+.DS_Store
+.idea/
+.vscode/
+
+# Project spec (kept out of the public repo)
+Guideline.pdf

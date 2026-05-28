@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stat_arb"
+version = "0.2.0"
+description = "Adaptive statistical arbitrage via regime-switching Ornstein-Uhlenbeck processes (Stages 0-2)."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Stat-Arb Project" }]
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "pandas>=2.1",
+    "statsmodels>=0.14",
+    "matplotlib>=3.8",
+]
+
+[project.optional-dependencies]
+yfinance = ["yfinance>=0.2"]
+openbb   = ["openbb>=4.0"]
+dev      = ["pytest>=8.0", "pytest-cov>=4.1"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::FutureWarning",
+]
+markers = [
+    "slow: marks tests as slow",
+    "network: marks tests that hit the network (yfinance / OpenBB)",
+]
