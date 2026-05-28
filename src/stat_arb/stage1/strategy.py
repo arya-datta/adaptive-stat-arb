@@ -92,8 +92,12 @@ class ZScoreStrategy(Strategy):
 
         if self.stop_z is not None and abs(z) >= self.stop_z:
             return 0
-        if cur != 0 and abs(z) <= self.exit_z:
-            return 0
+        # Directional exit: close when z reverts back through the exit level.
+        # (``abs(z) <= exit_z`` would be measure-zero for exit_z=0 and never fire.)
+        if cur == -1 and z <= self.exit_z:
+            return 0   # short entered high; spread reverted down
+        if cur == +1 and z >= -self.exit_z:
+            return 0   # long entered low; spread reverted up
         if cur == 0:
             if z >= self.entry_z:
                 return -1  # rich → short the spread
