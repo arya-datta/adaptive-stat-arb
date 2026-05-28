@@ -18,6 +18,11 @@ from .deflated_sharpe import deflated_sharpe_ratio, expected_max_sharpe
 from .purged_cv import PurgedKFold
 from .walk_forward import walk_forward_splits
 from .pbo import probability_of_backtest_overfitting
+from .multiple_testing import (
+    benjamini_hochberg,
+    harvey_liu_zhu_hurdle,
+    sharpe_pvalue,
+)
 
 __all__ = [
     "adf_test",
@@ -31,4 +36,7 @@ __all__ = [
     "PurgedKFold",
     "walk_forward_splits",
     "probability_of_backtest_overfitting",
+    "benjamini_hochberg",
+    "harvey_liu_zhu_hurdle",
+    "sharpe_pvalue",
 ]

@@ -10,7 +10,9 @@ via Regime-Switching Ornstein–Uhlenbeck Processes* roadmap:
 | 2     | Optimal stopping (Leung & Li free-boundary)                    | ✓      |
 | 3     | Kalman-filtered dynamic cointegration                          | ✓      |
 | 4     | Regime-switching OU (HMM via EM / Hamilton filter)             | ✓      |
-| 5-8   | Bayesian / Multivariate / Microstructure / Deep-learning       | ✗ (future) |
+| 5     | Bayesian OU / particle filtering (uncertainty-aware sizing)     | ✓      |
+| 6     | Multivariate stat-arb (PCA eigenportfolios, VECM, HRP)         | ✓      |
+| 7-8   | Microstructure execution / Deep-learning extensions            | ✗ (future) |
 
 The three governing principles of the roadmap apply throughout:
 
@@ -82,6 +84,8 @@ src/stat_arb/
 ├── stage2/       # Leung-Li optimal entry/exit boundaries via OU fundamental solutions
 ├── stage3/       # Kalman dynamic hedge (time-varying beta), rolling-OLS benchmark
 ├── stage4/       # Markov-switching OU via EM/Hamilton filter, justification gate
+├── stage5/       # Bayesian OU (conjugate), Liu-West particle filter, uncertainty sizing
+├── stage6/       # PCA eigenportfolios (Avellaneda-Lee), VECM, Ledoit-Wolf/HRP
 ├── calibration/  # Parallel parameter sweeps
 └── utils/
 tests/            # pytest suite with synthetic-recovery and gate tests

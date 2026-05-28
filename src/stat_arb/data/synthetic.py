@@ -168,6 +168,71 @@ class SyntheticMarkovOU(DataSource):
         return self._cached
 
 
+class SyntheticFactorMarket(DataSource):
+    r"""Simulate a multi-asset market with common factors + mean-reverting residuals.
+
+    Each log-price is the sum of a systematic part (loadings on ``n_factors``
+    random-walk factors) and an idiosyncratic part that is a *stationary OU
+    process* (the mean-reverting mispricing Avellaneda-Lee trade). PCA on the
+    returns should recover the factor structure, and the de-factored cumulative
+    residual of each name should be OU.
+
+    Parameters
+    ----------
+    n_stocks, n_factors:
+        Universe and factor dimensions.
+    factor_vol:
+        Per-step volatility of each factor return.
+    resid_kappa, resid_sigma:
+        OU parameters of the idiosyncratic residual (shared across names).
+    dt:
+        Time step in years.
+    """
+
+    def __init__(
+        self,
+        n_stocks: int = 20,
+        n_factors: int = 3,
+        factor_vol: float = 0.012,
+        resid_kappa: float = 10.0,
+        resid_sigma: float = 0.04,
+        dt: float = 1.0 / 252.0,
+    ) -> None:
+        self.n_stocks = int(n_stocks)
+        self.n_factors = int(n_factors)
+        self.factor_vol = float(factor_vol)
+        self.resid_kappa = float(resid_kappa)
+        self.resid_sigma = float(resid_sigma)
+        self.dt = float(dt)
+        self._cached: pd.DataFrame | None = None
+
+    def simulate(self, n: int, seed: int | None = None) -> pd.DataFrame:
+        rng = np.random.default_rng(seed)
+        # Factor returns (iid normal) and cumulative factor levels.
+        factor_ret = rng.standard_normal((n, self.n_factors)) * self.factor_vol
+        loadings = rng.normal(0.0, 1.0, size=(self.n_stocks, self.n_factors))
+        systematic_ret = factor_ret @ loadings.T          # (n, n_stocks)
+
+        # Idiosyncratic OU residual per stock (the tradeable mispricing).
+        decay = np.exp(-self.resid_kappa * self.dt)
+        eps_sd = self.resid_sigma * np.sqrt((1.0 - decay**2) / (2.0 * self.resid_kappa))
+        resid = np.empty((n, self.n_stocks))
+        resid[0] = (self.resid_sigma / np.sqrt(2 * self.resid_kappa)) * rng.standard_normal(self.n_stocks)
+        for t in range(1, n):
+            resid[t] = resid[t - 1] * decay + eps_sd * rng.standard_normal(self.n_stocks)
+
+        log_price = np.cumsum(systematic_ret, axis=0) + resid + np.log(50.0)
+        cols = [f"S{i:02d}" for i in range(self.n_stocks)]
+        index = pd.date_range("2010-01-04", periods=n, freq="B")
+        self._cached = pd.DataFrame(np.exp(log_price), index=index, columns=cols)
+        return self._cached
+
+    def frame(self) -> pd.DataFrame:
+        if self._cached is None:
+            raise RuntimeError("Call .simulate(n, ...) before iterating SyntheticFactorMarket.")
+        return self._cached
+
+
 class SyntheticPair(DataSource):
     """Two log-prices ``Y`` and ``X`` whose linear combination is OU.
 
