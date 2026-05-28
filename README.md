@@ -8,7 +8,9 @@ via Regime-Switching Ornstein–Uhlenbeck Processes* roadmap:
 | 0     | Data spine + event-driven backtest engine                      | ✓      |
 | 1     | Static cointegration + continuous-time OU MLE                  | ✓      |
 | 2     | Optimal stopping (Leung & Li free-boundary)                    | ✓      |
-| 3-8   | Kalman / HMM / Bayesian / Multivariate / Microstructure / DL   | ✗ (future) |
+| 3     | Kalman-filtered dynamic cointegration                          | ✓      |
+| 4     | Regime-switching OU (HMM via EM / Hamilton filter)             | ✓      |
+| 5-8   | Bayesian / Multivariate / Microstructure / Deep-learning       | ✗ (future) |
 
 The three governing principles of the roadmap apply throughout:
 
@@ -78,6 +80,8 @@ src/stat_arb/
 ├── validation/   # Stationarity, Lo-2002 Sharpe SE, Deflated Sharpe, purged-CV, PBO, walk-forward
 ├── stage1/       # Engle-Granger, Johansen, continuous-time OU MLE, ±z strategy
 ├── stage2/       # Leung-Li optimal entry/exit boundaries via OU fundamental solutions
+├── stage3/       # Kalman dynamic hedge (time-varying beta), rolling-OLS benchmark
+├── stage4/       # Markov-switching OU via EM/Hamilton filter, justification gate
 ├── calibration/  # Parallel parameter sweeps
 └── utils/
 tests/            # pytest suite with synthetic-recovery and gate tests

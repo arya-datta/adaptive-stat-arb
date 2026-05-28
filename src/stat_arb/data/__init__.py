@@ -10,7 +10,7 @@ constructor change.
 """
 
 from .base import DataSource, Bar, PriceFrame
-from .synthetic import SyntheticOU, SyntheticPair
+from .synthetic import SyntheticOU, SyntheticPair, SyntheticMarkovOU
 from .csv_source import CSVDataSource
 
 # Optional sources — fail soft so the package still imports without them.
@@ -30,6 +30,7 @@ __all__ = [
     "PriceFrame",
     "SyntheticOU",
     "SyntheticPair",
+    "SyntheticMarkovOU",
     "CSVDataSource",
     "YFinanceDataSource",
     "OpenBBDataSource",

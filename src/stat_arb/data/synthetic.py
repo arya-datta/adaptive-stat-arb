@@ -94,6 +94,80 @@ class SyntheticOU(DataSource):
         return self._cached
 
 
+class SyntheticMarkovOU(DataSource):
+    r"""Simulate a regime-switching OU process (Stage 4 test fixture).
+
+    A latent Markov chain :math:`S_t \in \{0,\dots,K-1\}` with transition
+    matrix ``P`` governs the OU parameters:
+
+    .. math:: dX_t = \kappa_{S_t}(\mu_{S_t} - X_t)\,dt + \sigma_{S_t}\,dW_t.
+
+    Each regime uses the exact OU transition, so the EM fitter can recover
+    the per-regime parameters from a long enough path.
+
+    Parameters
+    ----------
+    kappas, mus, sigmas:
+        Length-``K`` per-regime OU parameters.
+    P:
+        ``K x K`` row-stochastic transition matrix.
+    dt:
+        Time step in years.
+    """
+
+    def __init__(
+        self,
+        kappas: list[float],
+        mus: list[float],
+        sigmas: list[float],
+        P: list[list[float]],
+        dt: float = 1.0 / 252.0,
+    ) -> None:
+        self.kappas = np.asarray(kappas, float)
+        self.mus = np.asarray(mus, float)
+        self.sigmas = np.asarray(sigmas, float)
+        self.P = np.asarray(P, float)
+        self.dt = float(dt)
+        K = len(kappas)
+        if not (len(mus) == len(sigmas) == K and self.P.shape == (K, K)):
+            raise ValueError("Inconsistent regime dimensions.")
+        if not np.allclose(self.P.sum(axis=1), 1.0):
+            raise ValueError("Rows of P must sum to 1.")
+        self.n_regimes = K
+        self._cached: pd.DataFrame | None = None
+        self._regimes: np.ndarray | None = None
+
+    def simulate(self, n: int, seed: int | None = None) -> pd.DataFrame:
+        rng = np.random.default_rng(seed)
+        decay = np.exp(-self.kappas * self.dt)
+        eps_sd = self.sigmas * np.sqrt((1.0 - decay**2) / (2.0 * self.kappas))
+
+        regimes = np.empty(n, dtype=int)
+        x = np.empty(n)
+        regimes[0] = 0
+        x[0] = self.mus[0] + (self.sigmas[0] / np.sqrt(2 * self.kappas[0])) * rng.standard_normal()
+        for t in range(1, n):
+            regimes[t] = rng.choice(self.n_regimes, p=self.P[regimes[t - 1]])
+            s = regimes[t]
+            x[t] = self.mus[s] + (x[t - 1] - self.mus[s]) * decay[s] + eps_sd[s] * rng.standard_normal()
+
+        index = pd.date_range("2010-01-04", periods=n, freq="B")
+        self._regimes = regimes
+        self._cached = pd.DataFrame({"spread": x}, index=index)
+        return self._cached
+
+    @property
+    def regimes(self) -> np.ndarray:
+        if self._regimes is None:
+            raise RuntimeError("Call .simulate(...) first.")
+        return self._regimes
+
+    def frame(self) -> pd.DataFrame:
+        if self._cached is None:
+            raise RuntimeError("Call .simulate(n, ...) before iterating SyntheticMarkovOU.")
+        return self._cached
+
+
 class SyntheticPair(DataSource):
     """Two log-prices ``Y`` and ``X`` whose linear combination is OU.
 
