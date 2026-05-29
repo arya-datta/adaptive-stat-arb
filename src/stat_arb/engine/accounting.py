@@ -66,6 +66,10 @@ class BacktestResult:
             "sharpe":           float(sharpe),
             "max_drawdown":     float(max_dd),
             "turnover_annual":  float(turnover),
+            # num_fills is the honest count of executed legs; a pairs round-trip
+            # is four fills (enter 2 legs, exit 2). num_trades is kept as an alias
+            # for backward compatibility and counts the *same* legs, not round-trips.
+            "num_fills":        len(self.fills),
             "num_trades":       len(self.fills),
             "total_commission": float(total_commission),
         }

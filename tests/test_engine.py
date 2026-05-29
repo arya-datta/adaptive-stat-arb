@@ -13,13 +13,8 @@ from stat_arb.engine import (
 )
 
 
-# A minimal DataSource that wraps a fixed DataFrame for testing.
-class _FrameSource(DataSource):
-    def __init__(self, df: pd.DataFrame) -> None:
-        self.df = df
-
-    def frame(self) -> pd.DataFrame:
-        return self.df
+# Shared in-memory frame adapter (was a one-off shim).
+from stat_arb.data import InMemorySource as _FrameSource  # noqa: E402
 
 
 class _AlwaysFullyInvested(Strategy):
@@ -37,6 +32,23 @@ class _AlwaysFullyInvested(Strategy):
             return None
         self._sent = True
         return SignalEvent(timestamp=event.timestamp, target_weights={self.symbol: 1.0})
+
+
+def test_equity_carries_last_price_through_a_gap():
+    """A missing/NaN quote on a held name must not collapse equity to cash —
+    the position is valued at its last good price (no fabricated drawdown)."""
+    idx = pd.date_range("2024-01-02", periods=6, freq="B")
+    prices = pd.DataFrame({"ASSET": [100.0, 101.0, 102.0, np.nan, 104.0, 105.0]}, index=idx)
+    result = Backtester(_AlwaysFullyInvested("ASSET"), ZeroCostModel(),
+                        initial_capital=1_000_000.0).run(_FrameSource(prices))
+    eq = result.equity
+    gap_equity = float(eq.iloc[3])             # the NaN bar
+    # Position bought at bar 1 (≈101); on the gap bar it should still be marked
+    # near the neighbouring levels, far above a cash-only ~1e6 collapse artifact.
+    assert gap_equity > 1.005e6
+    assert eq.iloc[2] * 0.97 < gap_equity < eq.iloc[4] * 1.03
+    # No NaN in the equity curve.
+    assert eq.notna().all()
 
 
 def test_zero_cost_buy_and_hold_ties_to_handcalc(buy_and_hold_data):

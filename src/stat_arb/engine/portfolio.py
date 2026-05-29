@@ -15,7 +15,7 @@ from collections.abc import Iterator
 
 import pandas as pd
 
-from .events import SignalEvent, OrderEvent
+from .events import SignalEvent, OrderEvent, FillEvent
 
 
 class Portfolio:
@@ -45,13 +45,33 @@ class Portfolio:
 
         self.cash: float = float(initial_capital)
         self.positions: dict[str, float] = defaultdict(float)
+        # Last finite, positive price seen per symbol — used to value a position
+        # on a bar where its quote is missing/NaN (a halt or data gap) instead of
+        # marking it to zero, which would fabricate a drawdown-and-recovery.
+        self._last_prices: dict[str, float] = {}
 
     def equity(self, prices: pd.Series) -> float:
-        """Mark-to-market equity using ``prices`` (symbol → price)."""
-        mtm = sum(qty * prices.get(sym, 0.0) for sym, qty in self.positions.items())
+        """Mark-to-market equity using ``prices`` (symbol → price).
+
+        Symbols absent or non-finite in ``prices`` are valued at their last
+        known good price (carried forward); only if a symbol has *never* been
+        priced is it treated as zero.
+        """
+        # Refresh the last-good-price cache from this bar's valid quotes.
+        for sym, px in prices.items():
+            fpx = float(px)
+            if fpx == fpx and fpx > 0:        # finite and positive
+                self._last_prices[sym] = fpx
+
+        mtm = 0.0
+        for sym, qty in self.positions.items():
+            px = float(prices.get(sym, float("nan")))
+            if not (px == px) or px <= 0:     # missing/NaN/non-positive this bar
+                px = self._last_prices.get(sym, 0.0)
+            mtm += qty * px
         return self.cash + mtm
 
-    def apply_fill(self, fill) -> None:  # type: ignore[no-untyped-def]
+    def apply_fill(self, fill: FillEvent) -> None:
         """Update cash and positions for a :class:`FillEvent`."""
         notional = fill.quantity * fill.price
         self.cash -= notional + fill.commission
@@ -67,6 +87,12 @@ class Portfolio:
         Orders are timestamped with ``signal.timestamp`` (the bar the
         decision was made on); the backtester delays fills to the *next*
         bar's price.
+
+        Note on exposure drift: a position is sized once, when a target weight
+        changes, and is *not* re-balanced to a constant weight every bar. So a
+        strategy's nominal ``gross`` holds at entry but drifts with price until
+        the next signal — realistic for low-turnover books, but it means
+        ``gross`` is a target at trade time, not a per-bar invariant.
         """
         equity = self.equity(prices)
         if equity <= 0:
