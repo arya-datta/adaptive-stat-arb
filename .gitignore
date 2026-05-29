@@ -19,5 +19,8 @@ data/cache/
 # Project spec (kept out of the public repo)
 Guideline.pdf
 
-# Interview-prep package (built separately, not part of the library)
-interview_prep/
+# Interview-prep package (built separately, not part of the library).
+# Ignore its contents (generated PDFs, build scripts, flashcards, scratch) but
+# keep the code-review fixes log tracked so it reaches main on merge.
+interview_prep/*
+!interview_prep/CODE_REVIEW_FIXES.md
