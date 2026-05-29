@@ -34,6 +34,16 @@ class _AlwaysFullyInvested(Strategy):
         return SignalEvent(timestamp=event.timestamp, target_weights={self.symbol: 1.0})
 
 
+def test_returns_are_finite_through_zero_equity():
+    """Bankruptcy edge: equity touching zero must not poison returns with inf/nan."""
+    from stat_arb.engine import BacktestResult
+    idx = pd.date_range("2024-01-02", periods=4, freq="B")
+    equity = pd.Series([1_000_000.0, 500_000.0, 0.0, 100_000.0], index=idx)
+    res = BacktestResult(equity=equity, positions=pd.DataFrame(index=idx))
+    assert np.isfinite(res.returns.to_numpy()).all()
+    assert np.isfinite(res.log_returns.to_numpy()).all()
+
+
 def test_equity_carries_last_price_through_a_gap():
     """A missing/NaN quote on a held name must not collapse equity to cash —
     the position is valued at its last good price (no fabricated drawdown)."""

@@ -253,7 +253,6 @@ def _solve_long(
         return float("nan"), float("nan"), False
 
     F_b = fund.F(b_star)
-    F_b_prime = fund.F_prime(b_star)
 
     # --- value function V(x) for x ≤ b* ------------------------------
     def V(x: float) -> float:

@@ -86,6 +86,12 @@ class ParticleFilterOU:
         # Liu-West kernel shrinkage toward the weighted mean.
         theta_bar = np.average(theta, axis=0, weights=w)
         cov = np.cov(theta.T, aweights=w)
+        # Guard against cloud collapse: if the weighted covariance degenerates
+        # to (near) zero — e.g. after resampling concentrates the weight — a
+        # zero kernel produces no jitter and the filter freezes. A tiny ridge
+        # keeps the proposal non-degenerate (and the matrix positive definite).
+        cov = np.atleast_2d(np.nan_to_num(cov, nan=0.0))
+        cov[np.diag_indices_from(cov)] += 1e-12
         m = self.a_shrink * theta + (1.0 - self.a_shrink) * theta_bar[None, :]
 
         # Propose jittered particles.

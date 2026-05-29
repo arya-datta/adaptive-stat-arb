@@ -29,11 +29,16 @@ class BacktestResult:
     # ------------------------------------------------------------------ #
     @property
     def returns(self) -> pd.Series:
-        return self.equity.pct_change().fillna(0.0)
+        # ±inf can arise if equity touches zero (a previous bar at 0); scrub it
+        # so a bankruptcy edge case can't poison the Sharpe with inf/nan.
+        r = self.equity.pct_change()
+        return r.replace([np.inf, -np.inf], np.nan).fillna(0.0)
 
     @property
     def log_returns(self) -> pd.Series:
-        return np.log(self.equity / self.equity.shift(1)).fillna(0.0)
+        # log of a non-positive equity is nan/-inf; scrub for the same reason.
+        r = np.log(self.equity / self.equity.shift(1))
+        return r.replace([np.inf, -np.inf], np.nan).fillna(0.0)
 
     # ------------------------------------------------------------------ #
     # Summary metrics                                                    #

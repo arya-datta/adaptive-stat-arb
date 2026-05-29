@@ -12,8 +12,11 @@ frictions that actually decide whether a short-horizon edge is real:
   punished super-linearly in *total* cost.
 * **Latency slippage** — a fixed adverse drift between decision and fill.
 * **Partial fills** — only ``participation_cap * ADV`` shares clear in one
-  bar; the unfilled remainder is dropped (the strategy re-attempts next bar
-  via its target-weight reconciliation).
+  bar; the unfilled remainder is dropped. It is topped up only when the
+  strategy next emits a signal and the portfolio re-derives the residual
+  delta — so a hold-only strategy (e.g. a z-score book between state changes)
+  will sit *under* its target until its next trade. Strategies that need the
+  full size promptly should re-issue the target each bar.
 
 Because it implements the same :class:`ExecutionModel` interface, any prior
 stage's strategy can be re-run through it unchanged.
