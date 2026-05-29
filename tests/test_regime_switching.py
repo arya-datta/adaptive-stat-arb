@@ -22,12 +22,7 @@ from stat_arb.stage4 import (
 )
 
 
-class FrameSource(DataSource):
-    def __init__(self, df: pd.DataFrame) -> None:
-        self._df = df
-
-    def frame(self) -> pd.DataFrame:
-        return self._df
+from stat_arb.data import InMemorySource as FrameSource  # shared frame adapter
 
 
 @pytest.fixture(scope="module")
@@ -85,13 +80,17 @@ def test_justification_gate_adopts_for_two_regime_data(two_regime):
     assert j["lr_statistic"] > 0
 
 
-def test_justification_gate_rejects_single_regime_data():
+@pytest.mark.parametrize("seed", [0, 1, 2])
+def test_justification_gate_rejects_single_regime_data(seed):
     """Justified complexity only: on genuine single-regime OU, BIC should not
-    adopt a 2-regime model (the roadmap's principle #2). Verified across
-    several seeds offline; here we check one representative path."""
-    spread = SyntheticOU(kappa=5.0, mu=0.0, sigma=0.2).simulate(n=1500, seed=0)["spread"]
+    adopt a 2-regime model (the roadmap's principle #2). Checked across several
+    seeds so the rejection is a real property, not a one-seed fluke."""
+    spread = SyntheticOU(kappa=5.0, mu=0.0, sigma=0.2).simulate(n=1500, seed=seed)["spread"]
     j = regime_justification(spread, n_regimes=2, n_init=3)
-    assert not j["adopt_regime_switching"]
+    assert not j["adopt_regime_switching"], (
+        f"seed {seed}: BIC wrongly adopted 2 regimes on single-regime data "
+        f"(ΔBIC={j['bic_single'] - j['bic_multi']:.1f})"
+    )
 
 
 def test_regime_strategy_runs_and_stands_down():

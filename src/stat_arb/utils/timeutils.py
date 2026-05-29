@@ -43,4 +43,14 @@ def infer_dt(index: pd.Index) -> float:
         return 1.0 / 52.0
     if 25.0 <= median_days <= 35.0:
         return 1.0 / 12.0
+
+    # No recognised calendar: fall back to calendar time, but warn — an
+    # irregular index silently mis-scales every downstream kappa/half-life.
+    import warnings
+    warnings.warn(
+        f"infer_dt: median spacing {median_days:.2f} days matches no standard "
+        "calendar (daily/weekly/monthly); falling back to calendar-time "
+        "dt = median_days/365.25. Pass dt explicitly if this is wrong.",
+        stacklevel=2,
+    )
     return median_days / 365.25

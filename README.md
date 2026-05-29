@@ -103,3 +103,20 @@ pytest                       # full suite (excluding network-marked)
 pytest -m "not network"      # skip yfinance/OpenBB tests
 pytest tests/test_ou_mle.py  # one stage
 ```
+
+## Honest limitations (read before trusting any Sharpe here)
+
+- **The positive Sharpes in the unit tests and `examples/` are in-simulation.**
+  They are generated from the exact processes the estimators are designed to
+  fit (`SyntheticOU`, `SyntheticPair`, `SyntheticFactorMarket`, …). That makes
+  them good *correctness* checks — "does the MLE recover the truth, does the
+  strategy round-trip" — but they are **not evidence of a real edge**.
+- **The reality check is `examples/pressure_test_real_data.py`.** Run on liquid
+  pairs over multi-year windows it mostly finds *nothing tradeable* — pairs
+  fail cointegration, or revert too fast to trade, or break down out-of-sample.
+  That negative result is the point: the machinery is sound; a static
+  single-regime edge in these names is not there.
+- **`yfinance` is survivorship-biased** (current listings only). For research,
+  plug a point-in-time vendor in through `CSVDataSource`.
+- **The number to quote is the post-microstructure, Deflated-Sharpe-adjusted
+  one with a Lo-2002 CI and PBO < 0.5** — not the raw backtest Sharpe.
