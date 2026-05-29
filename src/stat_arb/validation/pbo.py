@@ -70,10 +70,11 @@ def probability_of_backtest_overfitting(
         oos_sr = _sharpe_columnwise(out_sample)
 
         best_is = int(np.argmax(is_sr))
-        # Rank of the chosen strategy within OOS distribution.
-        # ``omega`` is its empirical CDF position.
-        omega = float((oos_sr <= oos_sr[best_is]).sum()) / N
-        omega = min(max(omega, 1.0 / (N + 1)), 1.0 - 1.0 / (N + 1))  # avoid 0/∞
+        # Relative rank of the IS-best strategy within the OOS distribution.
+        # López de Prado convention: rank r in 1..N, ω = r/(N+1) ∈ (0,1), so the
+        # logit is finite without ad-hoc clipping. r counts OOS Sharpes ≤ chosen.
+        rank = int((oos_sr <= oos_sr[best_is]).sum())
+        omega = rank / (N + 1.0)
         logits.append(float(np.log(omega / (1.0 - omega))))
 
     logits_arr = np.asarray(logits)

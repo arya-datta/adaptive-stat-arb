@@ -94,6 +94,31 @@ def test_dsr_punishes_winning_in_a_large_search():
     assert large["dsr"] < small["dsr"]
 
 
+def test_dsr_is_scale_consistent_and_not_degenerate():
+    """Regression guard for the units bug: with a *realistic annualised* trial-
+    Sharpe variance, a genuinely good strategy must produce a DSR strictly
+    inside (0, 1) — not pinned at 0 because an annualised variance was fed into
+    a per-observation formula."""
+    rng = np.random.default_rng(7)
+    # ~1.6 annualised Sharpe daily strategy.
+    r = rng.normal(0.1 / np.sqrt(252) * 0.01, 0.01, size=750)
+    out = deflated_sharpe_ratio(r, n_trials=50, sr_variance_across_trials=0.5)
+    assert 0.0 < out["dsr"] < 1.0, f"DSR degenerate: {out['dsr']}"
+    # Reported SR0 is a sane annualised benchmark, not ~17.
+    assert 0.0 < out["sr0"] < 5.0, f"SR0 implausible: {out['sr0']}"
+    # Annualised vs per-observation reporting are consistent.
+    assert out["sr"] == pytest.approx(out["sr_period"] * np.sqrt(252), rel=1e-9)
+
+
+def test_dsr_warns_on_mis_scaled_variance():
+    """Feeding a per-observation-sized variance as if annualised is fine, but a
+    wildly large variance (the classic scale error) trips the guard warning."""
+    rng = np.random.default_rng(1)
+    r = rng.normal(0.0008, 0.01, size=500)
+    with pytest.warns(UserWarning, match="wrong"):
+        deflated_sharpe_ratio(r, n_trials=50, sr_variance_across_trials=400.0)
+
+
 # -------------------- Purged CV --------------------
 def test_purged_kfold_train_test_disjoint():
     cv = PurgedKFold(n_splits=5, embargo_frac=0.02, label_horizon=3)
@@ -131,3 +156,17 @@ def test_pbo_random_strategies_around_one_half(random_returns_matrix):
     # Generous tolerance: with N=200 noise strategies, PBO should be > 0.4
     assert 0.40 <= out["pbo"] <= 0.60, f"PBO={out['pbo']:.2f}"
     assert out["n_combinations"] == 252  # C(10, 5)
+    # omega ∈ (0,1) ⇒ every logit is finite under the r/(N+1) convention.
+    assert np.all(np.isfinite(out["logits"]))
+
+
+def test_pbo_low_when_one_strategy_genuinely_dominates():
+    """Value-level check of the opposite regime: if one strategy has a real,
+    persistent edge and the rest are noise, the in-sample winner keeps winning
+    OOS, so PBO should be low (well below the noise ~0.5)."""
+    rng = np.random.default_rng(0)
+    T, N = 1000, 20
+    R = rng.normal(0.0, 0.01, size=(T, N))
+    R[:, 0] += 0.01 * 0.6   # strategy 0: persistent positive mean every period
+    out = probability_of_backtest_overfitting(R, n_partitions=10)
+    assert out["pbo"] < 0.25, f"PBO={out['pbo']:.2f} should be low for a real edge"
