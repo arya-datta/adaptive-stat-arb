@@ -12,7 +12,8 @@ via Regime-Switching Ornstein–Uhlenbeck Processes* roadmap:
 | 4     | Regime-switching OU (HMM via EM / Hamilton filter)             | ✓      |
 | 5     | Bayesian OU / particle filtering (uncertainty-aware sizing)     | ✓      |
 | 6     | Multivariate stat-arb (PCA eigenportfolios, VECM, HRP)         | ✓      |
-| 7-8   | Microstructure execution / Deep-learning extensions            | ✗ (future) |
+| 7     | Microstructure-aware execution (square-root impact, Almgren-Chriss) | ✓ |
+| 8     | Deep-learning extensions                                       | ✗ (future) |
 
 The three governing principles of the roadmap apply throughout:
 
@@ -86,6 +87,7 @@ src/stat_arb/
 ├── stage4/       # Markov-switching OU via EM/Hamilton filter, justification gate
 ├── stage5/       # Bayesian OU (conjugate), Liu-West particle filter, uncertainty sizing
 ├── stage6/       # PCA eigenportfolios (Avellaneda-Lee), VECM, Ledoit-Wolf/HRP
+├── stage7/       # Microstructure cost model (sqrt impact, partial fills) + Almgren-Chriss
 ├── calibration/  # Parallel parameter sweeps
 └── utils/
 tests/            # pytest suite with synthetic-recovery and gate tests
