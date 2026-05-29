@@ -3,12 +3,11 @@
 A self-review pass over the Adaptive Statistical Arbitrage codebase, conducted
 after all eight roadmap stages were built. Ten findings — correctness bugs,
 design gaps, and statistical-rigor gaps — were identified and fixed on a
-dedicated `fix/review` branch. This document is the durable record (it is the
-one tracked file in the otherwise-gitignored prep package, so it survives to
-`main` on merge).
+dedicated `fix/review` branch. This is the durable code-review record for the
+project (kept under `docs/` alongside `architecture.md` and `math.md`).
 
-**Verification:** full suite **77 passing, exit 0** after the fixes (+8 new
-regression tests over the prior 69).
+**Verification:** full suite **78 passing, exit 0** after the fixes and the
+follow-up hardening (+9 new regression tests over the prior 69).
 
 ## The fixes
 
@@ -36,14 +35,32 @@ fix the numbers are real and *more* informative: Stage 1's strong single pair
 survives deflation (**0.85**), while the 25-residual breadth book honestly does
 **not** (**0.045**) — which is the genuine result the bug had been masking.
 
+## Follow-up hardening (second review pass)
+
+A deeper recheck confirmed the numerical cores and the ten fixes are correct,
+and flagged four low-severity robustness items — none reachable by the current
+tests or strategies, but worth defending:
+
+| Item | Hardening |
+|------|-----------|
+| Dead variable | removed the unused `F_b_prime` in the optimal-stopping solver |
+| Partial-fill top-up | documented that a capped fill's remainder is completed only on the strategy's *next* signal, so a hold-only book sits under target between trades |
+| Particle-filter collapse | ridge the Liu-West kernel covariance so a degenerate/zero weighted cov can't freeze the proposal |
+| Bankruptcy-safe returns | scrub ±inf from `returns`/`log_returns` so equity touching zero can't poison the Sharpe (new regression test) |
+
 ## Branch / merge
 
-All fixes live on `fix/review` as five thematic commits:
+The work lives on `fix/review` as eight commits:
 
 1. `validation correctness (DSR scale, PBO omega)`
 2. `engine valuation + accounting honesty`
 3. `wire Ledoit-Wolf/HRP into the eigenportfolio book`
 4. `shared InMemorySource adapter; de-duplicate frame shims`
 5. `infer_dt warning, regime-gate multi-seed, README limitations`
+6. `add the code-review fixes log (originally inside the prep package)`
+7. `review hardening (four low-severity robustness fixes)`
+8. `move the code-review log to docs/ and re-simplify .gitignore`
 
-Intended to merge to `main` (fast-forward), preserving the five-commit history.
+Intended to merge to `main` (fast-forward), preserving the full history. With
+the log under `docs/`, the entire `interview_prep/` package is once again fully
+gitignored (built locally via `python interview_prep/build_pdfs.py`).
