@@ -18,12 +18,7 @@ from stat_arb.validation import benjamini_hochberg, harvey_liu_zhu_hurdle
 from stat_arb.validation.stationarity import adf_test
 
 
-class FrameSource(DataSource):
-    def __init__(self, df: pd.DataFrame) -> None:
-        self._df = df
-
-    def frame(self) -> pd.DataFrame:
-        return self._df
+from stat_arb.data import InMemorySource as FrameSource  # shared frame adapter
 
 
 @pytest.fixture(scope="module")
@@ -96,6 +91,32 @@ def test_eigenportfolio_strategy_runs_dollar_neutral(factor_market):
     gross = float((pos.abs() * prices.reindex(pos.index)).sum())
     if gross > 0:
         assert abs(net) / gross < 0.25
+
+
+def test_eigenportfolio_hrp_weighting_runs_and_is_neutral(factor_market):
+    """The HRP weighting path actually exercises Ledoit-Wolf + HRP (Stage 6's
+    risk machinery) inside the strategy, and stays dollar-neutral."""
+    symbols = list(factor_market.columns)
+    strat = EigenportfolioStrategy(symbols, n_factors=3, lookback=60,
+                                   recalc_every=5, s_entry=1.25, s_close=0.5,
+                                   weighting="hrp")
+    result = Backtester(strat, LinearCostModel(bps=5, half_spread_bps=2)).run(
+        FrameSource(factor_market)
+    )
+    s = result.summary()
+    assert np.isfinite(s["sharpe"])
+    assert s["ann_vol"] < 1.0
+    pos = result.positions.iloc[-1]
+    prices = factor_market.iloc[-1]
+    net = float((pos * prices.reindex(pos.index)).sum())
+    gross = float((pos.abs() * prices.reindex(pos.index)).sum())
+    if gross > 0:
+        assert abs(net) / gross < 0.25
+
+
+def test_eigenportfolio_rejects_bad_weighting():
+    with pytest.raises(ValueError):
+        EigenportfolioStrategy(["A", "B"], weighting="magic")
 
 
 # -------------------- VECM --------------------

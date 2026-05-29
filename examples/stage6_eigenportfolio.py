@@ -24,12 +24,7 @@ from stat_arb.validation import (
 )
 
 
-class FrameSource(DataSource):
-    def __init__(self, df: pd.DataFrame) -> None:
-        self._df = df
-
-    def frame(self) -> pd.DataFrame:
-        return self._df
+from stat_arb.data import InMemorySource as FrameSource  # shared frame adapter
 
 
 def main() -> None:
@@ -48,8 +43,11 @@ def main() -> None:
     print(f"Ledoit-Wolf shrinkage intensity: {lw['shrinkage']:.3f}")
     print(f"HRP weight range: [{hrp.min():.3f}, {hrp.max():.3f}] (sum={hrp.sum():.3f})")
 
+    # The book allocates each side's risk by HRP on a Ledoit-Wolf covariance
+    # (weighting="hrp"), so the shrinkage/HRP machinery above is actually used.
     strat = EigenportfolioStrategy(symbols, n_factors=3, lookback=60,
-                                   recalc_every=5, s_entry=1.25, s_close=0.5)
+                                   recalc_every=5, s_entry=1.25, s_close=0.5,
+                                   weighting="hrp")
     result = Backtester(strat, LinearCostModel(bps=5, half_spread_bps=2)).run(
         FrameSource(market)
     )
