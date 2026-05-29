@@ -19,12 +19,7 @@ from stat_arb.engine import (
 )
 
 
-class FrameSource(DataSource):
-    def __init__(self, df: pd.DataFrame) -> None:
-        self.df = df
-
-    def frame(self) -> pd.DataFrame:
-        return self.df
+from stat_arb.data import InMemorySource as FrameSource  # shared frame adapter
 
 
 class BuyAndHold(Strategy):

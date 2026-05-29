@@ -27,12 +27,7 @@ from stat_arb.stage2 import OptimalStoppingStrategy, compute_boundaries
 from stat_arb.validation import deflated_sharpe_ratio, sharpe_ci_lo
 
 
-class FrameSource(DataSource):
-    def __init__(self, df: pd.DataFrame) -> None:
-        self._df = df
-
-    def frame(self) -> pd.DataFrame:
-        return self._df
+from stat_arb.data import InMemorySource as FrameSource  # shared frame adapter
 
 
 def run(strategy, oos_prices) -> dict:

@@ -65,3 +65,22 @@ class DataSource(ABC):
 
     def __len__(self) -> int:
         return len(self.frame())
+
+
+class InMemorySource(DataSource):
+    """Wrap an in-memory price :class:`~pandas.DataFrame` as a ``DataSource``.
+
+    The canonical adapter for backtesting a frame you already hold (synthetic
+    data, a slice of a larger history, or a constructed spread). Replaces the
+    ad-hoc one-off ``FrameSource`` shims that otherwise get re-declared in
+    every example and test.
+    """
+
+    def __init__(self, frame: PriceFrame) -> None:
+        if not isinstance(frame.index, pd.DatetimeIndex):
+            frame = frame.copy()
+            frame.index = pd.to_datetime(frame.index)
+        self._frame = frame
+
+    def frame(self) -> PriceFrame:
+        return self._frame

@@ -37,12 +37,7 @@ CANDIDATES = [
 ]
 
 
-class FrameSource(DataSource):
-    def __init__(self, df: pd.DataFrame) -> None:
-        self._df = df
-
-    def frame(self) -> pd.DataFrame:
-        return self._df
+from stat_arb.data import InMemorySource as FrameSource  # shared frame adapter
 
 
 def fetch(y: str, x: str) -> pd.DataFrame:

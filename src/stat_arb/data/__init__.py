@@ -9,7 +9,7 @@ The split between loaders is deliberate: the engine only consumes the
 constructor change.
 """
 
-from .base import DataSource, Bar, PriceFrame
+from .base import DataSource, Bar, PriceFrame, InMemorySource
 from .synthetic import (
     SyntheticOU, SyntheticPair, SyntheticMarkovOU, SyntheticFactorMarket,
 )
@@ -30,6 +30,7 @@ __all__ = [
     "DataSource",
     "Bar",
     "PriceFrame",
+    "InMemorySource",
     "SyntheticOU",
     "SyntheticPair",
     "SyntheticMarkovOU",
